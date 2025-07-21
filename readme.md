@@ -30,7 +30,7 @@ The required libraries are in requirements.txt
 
 ``` 
 pip install -r requirements.txt
-``
+```
 
 
 ## Data
