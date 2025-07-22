@@ -1,6 +1,6 @@
 # Teaching an Old LLM Secure Coding: Localized Preference Optimization on Distilled Preferences
 
-This is the Github Repository for the paper "Teaching an Old LLM Secure Coding: Localized Preference Optimization on Distilled Preferences" [Link](https://arxiv.org/abs/2506.00419) that has been accepted to **ACL 2025**.
+This is the Github Repository for the paper "Teaching an Old LLM Secure Coding: Localized Preference Optimization on Distilled Preferences" [(Link)](https://arxiv.org/abs/2506.00419) that has been accepted to **ACL 2025**.
 
 ## Abstract
 
