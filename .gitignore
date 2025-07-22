@@ -1,0 +1,3 @@
+# Ignore dataset and model folders
+./data/DiSCo/
+./models/

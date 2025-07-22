@@ -24,7 +24,7 @@ code quality.
 ![](./img/disco-lpo.png)
 
 ## Installation
-Python =
+Python Version : 3.10.14
 
 The required libraries are in requirements.txt
 
