@@ -1,0 +1,174 @@
+,Title,CWE,Description,Examples
+0,Using mark_safe,CWE-79,Use of mark_safe() may expose cross-site scripting vulnerabilities and should be reviewed.,NULL
+1,Executing Shell Command,CWE-078,"Any Python method that executes shell commands
+from within, such as subprocess, os or command modules,
+has shell injection attack risk. Such methods include os.system
+os.popen, os.popen2, os.popen3, os.popen4, popen2.popen2, popen2.popen3, 
+popen2.popen4, popen2.Popen3, popen2.Popen4, commands.getoutput, 
+commands.getstatusoutput etc.",NULL
+2,Importing subprocess module,CWE-78,Consider possible security implications associated with subprocess modules.,NULL
+3,Using ftplib,CWE-20,FTP-related functions are being called. FTP is considered insecure. Use SSH/SFTP/SCP or some other encrypted protocol.,NULL
+4,Function With Shell Equals True,CWE-078,"Any Python method that executes shell commands
+from within, such as subprocess and execute module,
+has shell injection attack risk if 'shell=True' argument
+is set.",NULL
+5,Using XML,CWE-20,Using various XLM methods to parse untrusted XML data is known to be vulnerable to XML attacks. Methods should be replaced with their defusedxml equivalents.,NULL
+6,Assert Used,CWE-703,"It was discovered that some projects used assert to enforce interface constraints.
+However, assert is removed with compiling to optimised byte code. 
+This caused various protections to be removed. Consider raising a 
+semantically meaningful error or AssertionError instead.",NULL
+7,Starting A Process With Partial Path,CWE-078,"If an external process execution in Python code occurs with a Partial
+path, it poses security risks from malicious attacks such controlling
+contents of PATH variable. Methods like subprocess.Popen, subprocess.call,
+os.popen, popen2.Popen3, popen2.Popen4, commands.getoutput, commands.getstatusoutput,
+os.execl, os.execle have such risk with partial paths.",NULL
+8,Weak Cryptography In SNMP,CWE-319,"Using weak cryptographic algorithms in snmp,
+such as v3 using noAuthNoPriv., presents security
+risk.",NULL
+9,Using eval,CWE-78,Use of possibly insecure function - consider using safer ast.literal_eval.,NULL
+10,Missing Timeout In Request Calls,CWE-400,"All request calls should have a timeout. Failure to do so can result
+in the process to hang indefinitely.",NULL
+11,Using random,CWE-330,Standard pseudo-random generators are not suitable for security/cryptographic purposes. Consider using the secrets module instead: https://docs.python.org/library/secrets.html,NULL
+12,Using Pickle,CWE-502,"Pickle and modules that wrap it can be unsafe when used to deserialize untrusted data, possible security issue.",NULL
+13,Using unverified_context,CWE-295,"By default, Python will create a secure, verified ssl context for use in such classes as HTTPSConnection. However, it still allows using an insecure context via the _create_unverified_context that reverts to the previous behavior that does not validate certificates or perform hostname checks.",NULL
+14,Hardcoding of Passwords in Function Arguments,CWE-259,"Hardcoding passwords in code increases chances of password guessing.
+Passwords, when passed as arguments to functions, can be hardcoded
+with argument declarations such as 'pass','password','passwd' etc.",NULL
+15,Using Marshal,CWE-502,Deserialization with the marshal module is possibly dangerous.,NULL
+16,Using load() Method Of YAML,CWE-20,"The yaml.load() function provides the ability to construct an 
+arbitrary Python object, which may be dangerous if you receive a
+YAML document from an untrusted source. yaml.safe_load() is safer
+alternative.",NULL
+17,Importing xml_etree module,CWE-20,"Using various methods to parse untrusted XML data is known to be vulnerable to XML attacks. Replace vulnerable imports with the equivalent defusedxml package, or make sure defusedxml.defuse_stdlib() is called.",NULL
+18,Importing xml_expat module,CWE-20,"Using various methods to parse untrusted XML data is known to be vulnerable to XML attacks. Replace vulnerable imports with the equivalent defusedxml package, or make sure defusedxml.defuse_stdlib() is called.",NULL
+19,Using Mako Templates,CWE-080,"Mako, a Python templating system used in Pylons and Pyramid, has 
+no environment wide variable escaping mechanism. Hence, all input variables 
+must be carefully escaped or Cross Site Scripting (XSS) attacks may happen.",NULL
+20,Insecure Use of Logging.Config.Listen,CWE-094,"logging.config.listen function provides the ability to 
+listen for external configuration files on a socket server. 
+Because portions of the configuration are passed through eval(), 
+use of this function may open its users to a security risk. While 
+it only connects to localhost and not any remote machine, there are 
+scenarios where untrusted code could be run under the account of the 
+process which calls listen().",NULL
+21,Using Flask App With Debug Set To TRUE,CWE-094,"Running Flask applications in debug mode results in the Werkzeug 
+debugger being enabled. This includes a feature that 
+allows arbitrary code execution.",NULL
+22,Importing xml_pulldom module,CWE-20,"Using various methods to parse untrusted XML data is known to be vulnerable to XML attacks. Replace vulnerable imports with the equivalent defusedxml package, or make sure defusedxml.defuse_stdlib() is called.",NULL
+23,Exec Used,CWE-078,Python's exec method or keyword is used. Various documents describe why exec is risky to use.,NULL
+24,Calling Subprocess Without Shell Equals True,CWE-078,"Spawning a process in Python code using 'subprocess' module,
+without 'shell=True' reduces shell injection attack risk
+but care should be taken to sanitize input.",NULL
+25,Hardcoded Binding to All Interfaces,CWE-605,"Hardcoded binding to all network interfaces, such as '0.0.0.0', can 
+potentially open up a service to traffic on unintended interfaces, 
+that may not be properly documented or secured.",NULL
+26,RawSQL Function In Django Used,CWE-089,"The RawSQL() method of Django framework is vulnerable to SQL injection 
+attacks.",NULL
+27,Using md5,CWE-327,"Use of insecure MD2, MD4, MD5, or SHA1 hash function.",NULL
+28,Calling Subprocess With Shell Equals True,CWE-078,"Spawning a process in Python code using 'subprocess' module,
+via methods such as 'popen' or 'call', poses shell injection 
+attack risks for argument 'shell=True'. Input should be sanitized
+appropriately.",NULL
+29,Wildcard Injections Through Linux Commands,CWE-078,"Linux commands can be executed through Python methods like 
+subprocess.Popen, subprocess.call,os.popen, popen2.Popen3, 
+popen2.Popen4, commands.getoutput, commands.getstatusoutput,
+os.execl, os.execle etc. Many commands, like chown, chmod, tar,
+rsync etc., take wildcard '*' character to implement all files 
+and folders and can be used to build partial paths. This poses
+security risks such as shell injection attacks.",NULL
+30,Pass in Except Block,CWE-703,"Errors in Python raise Exceptions for error logging and handling.
+However, the use of 'pass' in the 'except' block of the Exception
+can lead to ignoring the issue and raising other vulnerabilities.",NULL
+31,Importing pickle module,CWE-502,Consider possible security implications associated with pickle modules.,NULL
+32,Importing pyghmi module,CWE-319,An IPMI-related module is being imported. IPMI is considered insecure. Use an encrypted protocol.,NULL
+33,Using urllib_urlopen,CWE-22,Audit url open for permitted schemes. Allowing use of ‘file:’’ or custom schemes is often unexpected.,NULL
+34,Starting Process With No Shell,CWE-078,"Any Python code starting a process, especially
+through modules like os, that do not start a shell
+may pose a low risk without penetration testing or knowing
+where they are called from. Such processes include 
+os.execl, os.execle, os.execlp, os.execlpe, os.execv, os.execve, os.execvp, 
+os.execvpe, os.spawnl, os.spawnle, os.spawnlp, os.spawnlpe, os.spawnv, 
+os.spawnve, os.spawnvp, os.spawnvpe, os.startfile etc.",NULL
+35,Using Weak Cryptographic Key,CWE-326,"Cryptographic algorithms like RSA and DSA can be broken
+if key length is less than 1024. Hence length of 2048
+is recommended. EC keys less than 160 in length can also be broken
+so 224 is recommended.",NULL
+36,Importing httpoxy module,CWE-284,XMLRPC is particularly dangerous as it is also concerned with communicating data over a network. Use defusedxml.xmlrpc.monkey_patch() function to monkey-patch xmlrpclib and mitigate remote XML attacks.,NULL
+37,Using SSL With No Version Specified,CWE-327,"Python code using SSL/TSL with no version specified may use 
+broken versions, such as SSL v2, SSL v3, TLS v1, TLS v1.1, for
+maximizing compatibility.",NULL
+38,Importing xml_sax module,CWE-20,"Using various methods to parse untrusted XML data is known to be vulnerable to XML attacks. Replace vulnerable imports with the equivalent defusedxml package, or make sure defusedxml.defuse_stdlib() is called.",NULL
+39,Extra Function In Django Used,CWE-089,"The extra() method of Django framework is vulnerable to SQL injection 
+attacks.",NULL
+40,Importing lxml module,CWE-20,Using various methods to parse untrusted XML data is known to be vulnerable to XML attacks. Replace vulnerable imports with the equivalent defusedxml package.,NULL
+41,Certificate Validation Is Missing,CWE-295,"Encryption is critical to security and using TLS greatly increases this 
+security by guaranteeing identity of communicating parties via trusted
+certificates. During HTTPS requests, certificates are automatically 
+validated. However, if this validation is explicitly turned off, it 
+poses security risk.",NULL
+42,Importing pycrypto module,CWE-327,pycrypto library is known to have publicly disclosed buffer overflow vulnerability https://github.com/dlitz/pycrypto/issues/176. It is no longer actively maintained and has been deprecated in favor of pyca/cryptography library.,NULL
+43,Shell Injection in Paramiko Functions,CWE-078,"Paramiko is a Python library that works with the SSH2 protocol for
+secure connections to remote machines.It is intended to run commands on a 
+remote host. These commands are run within a shell on the target and are 
+vulnerable to various shell injection attacks through 'exec_command'.",NULL
+44,No Host Key Verification In SSH,CWE-295,"Encryption is critical to security and ssh can increases it by guaranteeing
+identity of communicating parties. This is done by presenting trusted host
+keys during connection initialization. If this host key verification is 
+disabled, it presents security risk.",NULL
+45,Tarfile Extractall Used Without Any Validation,CWE-022,"Using tarfile.extractall() without any validation from user 
+can result in security risks in code.",NULL
+46,Harcoding of temporary file/directory,CWE-377,"Hardcoding temporary file or directory paths as strings in code
+for any purpose increases vulnerability. Strings containing
+'/tmp','/var/tmp' etc. and many others indicate this security risk.",NULL
+47,Importing ftplib module,CWE-319,A FTP-related module is being imported. FTP is considered insecure. Use SSH/SFTP/SCP or some other encrypted protocol.,NULL
+48,Using mktemp_q,CWE-377,Use of insecure and deprecated function (mktemp).,NULL
+49,Using Mark_Safe Method In Django,CWE-80,"The mark_safe() method of Django framework is vulnerable to XSS 
+attacks.",NULL
+50,Bad Version Of SSL Used,CWE-327,"The following versions of SSL and TLS have vulnerabilities:
+SSL v2, SSL v3, TLS v1, TLS v1.1. Using them in code presents
+security risks and should be avoided. When using SSLv23, bad versions
+of SSL/TLS can be used if the flags are not provided.",NULL
+51,Importing xmlrpclib module,CWE-20,XMLRPC is particularly dangerous as it is also concerned with communicating data over a network. Use defusedxml.xmlrpc.monkey_patch() function to monkey-patch xmlrpclib and mitigate remote XML attacks.,NULL
+52,"MD4, MD5 or SHA1 Insecure Hash Functions",CWE-327,"Weak hasing functions such as MD4, MD5 or SHA1
+can be used using the Python cryptographic libraries
+like hashlib and crypt. Such weak hashes can be broken
+easily, presenting security issues in code.",NULL
+53,Using Insecure Version of SNMP,CWE-319,"Using insecure version of snmp like v1, v2c etc. present
+security risks in code.",NULL
+54,Importing xml_minidom module,CWE-20,"Using various methods to parse untrusted XML data is known to be vulnerable to XML attacks. Replace vulnerable imports with the equivalent defusedxml package, or make sure defusedxml.defuse_stdlib() is called.",NULL
+55,Using ciphers and modes,CWE-327,Use of insecure cipher or cipher mode. Replace with a known secure cipher such as AES.,NULL
+56,Hardcoding SQL Expressions,CWE-089,"SQL injection attacks involve inserting an SQL query via user input.
+SQL injection attacks can occur if SQL expressions are built from user 
+input using string building operations. Examples of such operations are:
+- 'SELECT %s FROM derp;' % var
+- 'SELECT thing FROM ' + tab
+- 'SELECT ' + val + ' FROM ' + tab + ...
+- 'SELECT {} FROM derp;'.format(var)
+- f'SELECT foo FROM bar WHERE id = {product}'
+- ''SELECT * FROM foo WHERE id = '[VALUE]' ''.replace('[VALUE]', identifier)
+If input is not sanitized, SQL injection attacks can happen through execution
+commands like: cursor.execute(“SELECT %s FROM derp;” % var)",NULL
+57,Hardcoding of Passwords as Default Function Arguments,CWE-259,"Hardcoding passwords in code increases chances of password guessing.
+Passwords, when hardcoded as default arguments using declarations such as 
+'pass','password','passwd' etc., can cause security risks.",NULL
+58,Setting Bad File Permissions,CWE-732,"Python provides chmod to manipulate POSIX file permissions. This can create
+security issues when a file is set to group write or executable or 
+if a file is set world write or executable.",NULL
+59,Using telnetlib,CWE-319,Telnet-related functions are being called. Telnet is considered insecure. Use SSH or some other encrypted protocol.,NULL
+60,Importing telnetlib module,CWE-319,A telnet-related module is being imported. Telnet is considered insecure. Use SSH or some other encrypted protocol.,NULL
+61,Hardcoding Password as a String,CWE-259,"Hardcoding passwords in code increases chances of password guessing.
+Passwords can be hardcoded as variables, dictionary keys, class attributes 
+with variable declarations such as 'pass','password','passwd' etc.",NULL
+62,Using SSL With Bad Default Values,CWE-327,"Python methods/functions using default values
+corresponding to broke SSL/TLS versions, such as 
+SSL v2, SSL v3, TLS v1, TLS v1.1, present vulenerabilities
+in code.",NULL
+63,Auto Escaping in Jinja2,CWE-094,"Jinja2, a Python HTML templating system, has option to 
+autoescape on input. When enabled, Jinja2 will filter input 
+strings to escape any HTML content 
+submitted via template variables. This results in vulnerability
+to Cross Site Scripting (XSS) attacks.",NULL
+64,Continue in Except Block,CWE-703,"Errors in Python raise Exceptions for error logging and handling.
+However, the use of 'continue' in the 'except' block of the Exception
+when running statements in a loop can lead to ignoring the issue 
+and creating other vulnerabilities.",NULL

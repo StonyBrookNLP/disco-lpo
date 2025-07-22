@@ -1,0 +1,956 @@
+,Title,CWE,Description,Examples
+0,CSRF Protection Weakened or Disabled,CWE-352,"Cross-site request forgery (CSRF) is a type of vulnerability where
+attacker tricks user into submitting  a state change on
+the server, such as changing the user's password via attacker's site. If the
+web application relies only on cookies for authentication, or on other
+credentials that are automatically included in the request, then this
+request will appear as legitimate to the server.","MIDDLEWARE = [
+    'django.middleware.security.SecurityMiddleware',
+    'django.contrib.sessions.middleware.SessionMiddleware',
+    'django.middleware.common.CommonMiddleware',
+    # 'django.middleware.csrf.CsrfViewMiddleware',
+    'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'django.contrib.messages.middleware.MessageMiddleware',
+    'django.middleware.clickjacking.XFrameOptionsMiddleware',
+]"
+1,Using Broken or Weak Cryptographic Hashing Algorithm On Sensitive Data,CWE-327,"Using a broken or weak cryptographic hash function can leave sensitive data
+like passwords and certificates
+vulnerable to attacks. As an example, both MD5 and SHA-1 are 
+known to be vulnerable to attacks.","import hashlib
+
+def certificate_matches_known_hash_bad(certificate, known_hash):
+    hash = hashlib.md5(certificate).hexdigest() # BAD
+    return hash == known_hash
+
+def certificate_matches_known_hash_good(certificate, known_hash):
+    hash = hashlib.sha256(certificate).hexdigest() # GOOD
+    return hash == known_hash
+$$$
+import hashlib
+
+def get_password_hash(password: str, salt: str):
+    return hashlib.sha256(password + salt).hexdigest() # BAD
+$$$
+from argon2 import PasswordHasher
+
+def get_initial_hash(password: str):
+    ph = PasswordHasher()
+    return ph.hash(password) # GOOD
+
+def check_password(password: str, known_hash):
+    ph = PasswordHasher()
+    return ph.verify(known_hash, password) # GOOD"
+2,Incomplete Regular Expression for Hostnames,CWE-020,"Sanitizing untrusted URLs is common for preventing attacks by checking that
+the host of a URL is in the set of allowed hosts. If a regex implements such
+checks,being too permissive by not escaping '.' meta-characters can lead to
+code vulnerabilities.","from flask import Flask, request, redirect
+import re
+
+app = Flask(__name__)
+
+UNSAFE_REGEX = re.compile(""(www|beta).example.com/"")
+SAFE_REGEX = re.compile(r""(www|beta)\.example\.com/"")
+
+@app.route('/some/path/bad')
+def unsafe(request):
+    target = request.args.get('target', '')
+    if UNSAFE_REGEX.match(target):
+        return redirect(target)
+
+@app.route('/some/path/good')
+def safe(request):
+    target = request.args.get('target', '')
+    if SAFE_REGEX.match(target):
+        return redirect(target)"
+3,Deserialization of User-Controlled Data,CWE-502,"Automatic deserialization of fields means that an attacker may
+craft a nested combination of objects on which the executed initialization code
+may have unforeseen effects, such as the execution of arbitrary code.
+Deserialization libraries like Pickle, Marshal and Yaml are vulnerable to this attack.","from django.conf.urls import url
+import pickle
+
+def unsafe(pickled):
+    return pickle.loads(pickled)
+
+urlpatterns = [
+    url(r'^(?P<object>.*)$', unsafe)
+]
+$$$
+
+from django.conf.urls import url
+import json
+
+def safe(pickled):
+    return json.loads(pickled)
+
+urlpatterns = [
+    url(r'^(?P<object>.*)$', safe)
+]"
+4,Use of Weak Cryptographic Key,CWE-326,"With higher computation, cryptographic algorithms can be broken.
+If the key sizes of algorithms RSA and DSA are less than 2048 bits and
+for ECC if it is less than 256 bits, then the cryptographic key is vulnerable
+to attacks.",NULL
+5,SQL Query Built From User-Controlled Sources,CWE-089,"If SQL query is built from
+user-provided data without checks, a user
+can run malicious queries.","from django.conf.urls import url
+from django.db import connection
+
+
+def show_user(request, username):
+    with connection.cursor() as cursor:
+        # BAD -- Using string formatting
+        cursor.execute(""SELECT * FROM users WHERE username = '%s'"" % username)
+        user = cursor.fetchone()
+
+        # GOOD -- Using parameters
+        cursor.execute(""SELECT * FROM users WHERE username = %s"", username)
+        user = cursor.fetchone()
+
+        # BAD -- Manually quoting placeholder (%s)
+        cursor.execute(""SELECT * FROM users WHERE username = '%s'"", username)
+        user = cursor.fetchone()
+
+urlpatterns = [url(r'^users/(?P<username>[^/]+)$', show_user)]"
+6,Server-Side Request Forgery,CWE-918,"Directly using user input into an HTTP request without validation
+can facilitate server-side request forgery (SSRF) attacks. In these attacks, the
+request may be changed, directed at a different server, or via a different
+protocol. This can allow the attacker to obtain sensitive information or perform
+actions with escalated privilege.We make a distinctions between 
+how much of the URL an attacker can control:
+-Full SSRF: where the full URL can be controlled.
+-Partial SSRF: where only part of the URL can be controlled, such as the
+path component of a URL to a hardcoded domain.","import requests
+from flask import Flask, request
+
+app = Flask(__name__)
+
+@app.route(""/full_ssrf"")
+def full_ssrf():
+    target = request.args[""target""]
+
+    # BAD: user has full control of URL
+    resp = requests.get(""https://"" + target + "".example.com/data/"")
+
+    # GOOD: `subdomain` is controlled by the server.
+    subdomain = ""europe"" if target == ""EU"" else ""world""
+    resp = requests.get(""https://"" + subdomain + "".example.com/data/"")
+$$$
+import requests
+from flask import Flask, request
+
+app = Flask(__name__)
+
+@app.route(""/partial_ssrf"")
+def partial_ssrf():
+    user_id = request.args[""user_id""]
+
+    # BAD: user can fully control the path component of the URL
+    resp = requests.get(""https://api.example.com/user_info/"" + user_id)
+
+    if user_id.isalnum():
+        # GOOD: user_id is restricted to be alpha-numeric, and cannot alter path component of URL
+        resp = requests.get(""https://api.example.com/user_info/"" + user_id)"
+7,Arbitrary File Write During Tarfile Extraction,CWE-022,"Tar archives contain entries where each entry
+include a file path. These paths may not be restricted  contain
+unexpected special elements like '..' for traversal. This might lead to files
+written in unexpected location or sensitive information mishandled. For example, 
+if a tar archive contains a file entry '..\sneaky-file;, and the tar archive
+is extracted to 'c:\output', then naively combining the paths would result
+in an output file path of 'c:\output\..\sneaky-file', which would cause the file to be
+written to 'c:\sneaky-file'.","import sys
+import tarfile
+
+with tarfile.open(sys.argv[1]) as tar:
+    #BAD : This could write any file on the filesystem.
+    for entry in tar:
+        tar.extract(entry, ""/tmp/unpack/"")
+$$$
+import sys
+import tarfile
+import os.path
+
+with tarfile.open(sys.argv[1]) as tar:
+    for entry in tar:
+        #GOOD: Check that entry is safe
+        if os.path.isabs(entry.name) or "".."" in entry.name:
+            raise ValueError(""Illegal tar archive entry"")
+        tar.extract(entry, ""/tmp/unpack/"")"
+8,NoSQL Injection,CWE-943,"Passing user-controlled sources into NoSQL queries can result in a NoSQL injection flaw.
+This tainted NoSQL query containing a user-controlled source can then 
+execute a malicious query in a NoSQL database such as MongoDB.
+In order for the user-controlled source to taint the NoSQL 
+query, the user-controller source must be converted into a 
+Python object using something like 'json.loads' or 'xmltodict.parse'",NULL
+9,Request Without Certificate Validation,CWE-295,"Disabling the encryption certificate verification that TLS provides can create security issues.
+Functions in the 'requests' module provide verification by default. It is only when
+explicitly turned off using 'verify=False' that no verification occurs.","import requests
+
+#Unsafe requests
+
+requests.get('https://semmle.com', verify=False) # UNSAFE
+requests.get('https://semmle.com', verify=0) # UNSAFE
+
+#Various safe options
+
+requests.get('https://semmle.com', verify=True) # Explicitly safe
+requests.get('https://semmle.com', verify=""/path/to/cert/"")
+requests.get('https://semmle.com') # The default is to verify.
+
+#Wrapper to ensure safety
+
+def make_safe_request(url, verify_cert):
+    if not verify_cert:
+        raise Exception(""Trying to make unsafe request"")
+    return requests.get(url, verify_cert)"
+10,XML Internal Entity Expansion,CWE-776,"If untrusted XML is parsed with entity expansion enabled, an attacker could
+submit unsanitized input that contains deeply nested entity definitions, causing the parser
+to take a very long time or use large amounts of memory, resulting in an XML bomb attack.
+For instance, in 'lxml' library, if 'huge_tree' is set to 'True', it could result in this issue.",NULL
+11,Regular Expression Injection,CWE-730,"Constructing a regular expression without user input sanitization techniques like 're.escape' 
+is dangerous. In particular, user may be able to perfom DDoS attack using
+a regular expression fragment that takes exponential time.",NULL
+12,LDAP Query Built From User-Controlled Sources,CWE-090,"If an LDAP query or DN is built using string concatenation or string formatting, 
+and include user input without any validation, user can run malicious LDAP queries.
+If such queries are not escaped using functions like 'ldap.dn.escape_dn_chars'
+or 'ldap.filter.escape_filter_chars', 'ldap3.utils.dn.escape_rdn' or 
+'ldap3.utils.conv.escape_filter_chars', malicious user can provide special characters 
+to change query meaning.","from flask import request, Flask
+import ldap
+
+
+@app.route(""/normal"")
+def normal():
+    unsafe_dc = request.args['dc']
+    unsafe_filter = request.args['username']
+
+    dn = ""dc={}"".format(unsafe_dc)
+    search_filter = ""(user={})"".format(unsafe_filter)
+
+    ldap_connection = ldap.initialize(""ldap://127.0.0.1"")
+    user = ldap_connection.search_s(
+        dn, ldap.SCOPE_SUBTREE, search_filter)
+$$$
+from flask import request, Flask
+import ldap3
+
+
+@app.route(""/normal"")
+def normal():
+    unsafe_dc = request.args['dc']
+    unsafe_filter = request.args['username']
+
+    dn = ""dc={}"".format(unsafe_dc)
+    search_filter = ""(user={})"".format(unsafe_filter)
+
+    srv = ldap3.Server('ldap://127.0.0.1')
+    conn = ldap3.Connection(srv, user=dn, auto_bind=True)
+    conn.search(dn, search_filter)
+$$$
+from flask import request, Flask
+import ldap
+import ldap.filter
+import ldap.dn
+
+
+@app.route(""/normal"")
+def normal():
+    unsafe_dc = request.args['dc']
+    unsafe_filter = request.args['username']
+
+    safe_dc = ldap.dn.escape_dn_chars(unsafe_dc)
+    safe_filter = ldap.filter.escape_filter_chars(unsafe_filter)
+
+    dn = ""dc={}"".format(safe_dc)
+    search_filter = ""(user={})"".format(safe_filter)
+
+    ldap_connection = ldap.initialize(""ldap://127.0.0.1"")
+    user = ldap_connection.search_s(
+        dn, ldap.SCOPE_SUBTREE, search_filter)
+$$$
+from flask import request, Flask
+import ldap3
+from ldap3.utils.dn import escape_rdn
+from ldap3.utils.conv import escape_filter_chars
+
+
+@app.route(""/normal"")
+def normal():
+    unsafe_dc = request.args['dc']
+    unsafe_filter = request.args['username']
+
+    safe_dc = escape_rdn(unsafe_dc)
+    safe_filter = escape_filter_chars(unsafe_filter)
+
+    dn = ""dc={}"".format(safe_dc)
+    search_filter = ""(user={})"".format(safe_filter)
+
+    srv = ldap3.Server('ldap://127.0.0.1')
+    conn = ldap3.Connection(srv, user=dn, auto_bind=True)
+    conn.search(dn, search_filter)"
+13,Incomplete URL Substring Sanitization,CWE-020,"Sanitizing untrusted URLs is common for preventing attacks by checking that
+the host of a URL is in the set of allowed hosts. However, treating the URL as a 
+string and checking if one of the allowed hosts is a substring of 
+the URL is prone to errors. Malicious URLs can bypass such security checks 
+by embedding one of the allowed hosts in an unexpected location","from flask import Flask, request, redirect
+from urllib.parse import urlparse
+
+app = Flask(__name__)
+
+# Not safe, as ""evil-example.net/example.com"" would be accepted
+
+@app.route('/some/path/bad1')
+def unsafe1(request):
+    target = request.args.get('target', '')
+    if ""example.com"" in target:
+        return redirect(target)
+
+# Not safe, as ""benign-looking-prefix-example.com"" would be accepted
+
+@app.route('/some/path/bad2')
+def unsafe2(request):
+    target = request.args.get('target', '')
+    if target.endswith(""example.com""):
+        return redirect(target)
+
+
+
+#Simplest and safest approach is to use an allowlist
+
+@app.route('/some/path/good1')
+def safe1(request):
+    allowlist = [
+        ""example.com/home"",
+        ""example.com/login"",
+    ]
+    target = request.args.get('target', '')
+    if target in allowlist:
+        return redirect(target)
+
+#More complex example allowing sub-domains.
+
+@app.route('/some/path/good2')
+def safe2(request):
+    target = request.args.get('target', '')
+    host = urlparse(target).hostname
+    #Note the '.' preceding example.com
+    if host and host.endswith("".example.com""):
+        return redirect(target)"
+14,Use of Insecure SSL/TLS Version,CWE-327,"Using a broken or weak cryptographic protocol may make a connection
+vulnerable. All versions of SSL,and TLS versions 1.0 and 1.1 are vulnerable.",NULL
+15,Untrusted Data Passed To External API,CWE-020,"An external API is defined as a call to a method that is not defined in the source
+code, and is not modeled as a taint step in the default taint library. As such 
+providing unsanitized data or user input to such APIs can result in a variety of security issues.",NULL
+16,Polynomial Regular Expression Used On Uncontrolled Data,CWE-730,"Consider this use of a regular expression, which removes
+all leading and trailing whitespace in a string:
+re.sub(r""^\s+|\s+$"", """", text).The sub-expression '""\s+$""' will match the
+whitespace characters in 'text' from left to right, but it
+can start matching anywhere within a whitespace sequence. This is
+problematic for strings that do not end with a whitespace
+character. Such a string will force the regular expression engine to
+process each whitespace sequence once per whitespace character in the
+sequence. This ultimately means that the time cost of trimming a
+string is quadratic in the length of the string. So a string like
+'""a b""' will take milliseconds to process, but a similar
+string with a million spaces instead of just one will take several
+minutes. Without using a negative look-behind
+('^\s+|(?&lt;!\s)\s+$'), or using the built-in strip
+method ('text.strip()'), this problem is unavoidable.","from flask import request, Flask
+import re
+
+
+@app.route(""/direct"")
+def direct():
+    unsafe_pattern = request.args[""pattern""]
+    re.search(unsafe_pattern, """")
+
+
+@app.route(""/compile"")
+def compile():
+    unsafe_pattern = request.args[""pattern""]
+    compiled_pattern = re.compile(unsafe_pattern)
+    compiled_pattern.search("""")
+$$$
+from flask import request, Flask
+import re
+
+
+@app.route(""/direct"")
+def direct():
+    unsafe_pattern = request.args['pattern']
+    safe_pattern = re.escape(unsafe_pattern)
+    re.search(safe_pattern, """")
+
+
+@app.route(""/compile"")
+def compile():
+    unsafe_pattern = request.args['pattern']
+    safe_pattern = re.escape(unsafe_pattern)
+    compiled_pattern = re.compile(safe_pattern)
+    compiled_pattern.search("""")"
+17,Default Version of SSL/TLS May Be Insecure,CWE-327,"'ssl.wrap_socket' function defaults to an insecure version of SSL/TLS, leaving the connection 
+vulnerable to attack. All versions of SSL, and TLS 1.0 and 1.1 are 
+known to be vulnerable to attacks.
+If no explicit 'ssl_version' is specified, the default 'PROTOCOL_TLS' 
+is chosen. This protocol is insecure because it allows TLS 1.0 and 
+TLS 1.1 and so should not be used.","import ssl
+import socket
+
+# Using the deprecated ssl.wrap_socket method
+ssl.wrap_socket(socket.socket(), ssl_version=ssl.PROTOCOL_SSLv2)
+
+# Using SSLContext
+context = ssl.SSLContext(ssl_version=ssl.PROTOCOL_SSLv3)
+
+# Using pyOpenSSL
+
+from pyOpenSSL import SSL
+
+context = SSL.Context(SSL.TLSv1_METHOD)
+
+
+$$$
+import ssl
+
+# Using flags to restrict the protocol
+context = ssl.SSLContext()
+context.options |= ssl.OP_NO_TLSv1 | ssl.OP_NO_TLSv1_1
+
+# Declaring a minimum version to restrict the protocol
+context = ssl.create_default_context()
+context.minimum_version = ssl.TLSVersion.TLSv1_2"
+18,XML External Entity Expansion,CWE-611,"Parsing untrusted XML files with a weakly configured XML parser may lead to an
+XML External Entity (XXE) attack. If external entity handling is not disabled when
+parsing untrusted data, then this attack can happen.","from flask import Flask, request
+import lxml.etree
+
+app = Flask(__name__)
+
+@app.post(""/upload"")
+def upload():
+    xml_src = request.get_data()
+    doc = lxml.etree.fromstring(xml_src)
+    return lxml.etree.tostring(doc)
+$$$
+from flask import Flask, request
+import lxml.etree
+
+app = Flask(__name__)
+
+@app.post(""/upload"")
+def upload():
+    xml_src = request.get_data()
+    parser = lxml.etree.XMLParser(resolve_entities=False)
+    doc = lxml.etree.fromstring(xml_src, parser=parser)
+    return lxml.etree.tostring(doc)"
+19,Jinja2 Templating With Autoescape = False,CWE-079,"XSS attacks can occur if untrusted input is not escaped. 
+This applies to templates as well as code.
+Jinja2 templates may be vulnerable to XSS attacks if the environment has 
+'autoescape' set to 'False'. Unfortunately, 'jinja2' sets 'autoescape' 
+to 'False' by default. Explicitly setting 'autoescape' to 'True' when creating an 
+'Environment' object will prevent this.","from flask import Flask, request, make_response, escape
+from jinja2 import Environment, select_autoescape, FileSystemLoader
+
+app = Flask(__name__)
+loader = FileSystemLoader( searchpath=""templates/"" )
+
+unsafe_env = Environment(loader=loader)
+safe1_env = Environment(loader=loader, autoescape=True)
+safe2_env = Environment(loader=loader, autoescape=select_autoescape())
+
+def render_response_from_env(env):
+    name = request.args.get('name', '')
+    template = env.get_template('template.html')
+    return make_response(template.render(name=name))
+
+@app.route('/unsafe')
+def unsafe():
+    return render_response_from_env(unsafe_env)
+
+@app.route('/safe1')
+def safe1():
+    return render_response_from_env(safe1_env)
+
+@app.route('/safe2')
+def safe2():
+    return render_response_from_env(safe2_env)"
+20,Creating A Temporary File May Be Insecure,CWE-377,"Functions that create temporary file names (such as 'tempfile.mktemp'
+and 'os.tempnam') are fundamentally insecure, as they do not
+ensure exclusive access to a file with the temporary name they return.
+The file name returned by these functions is guaranteed to be unique on
+creation but the file must be opened in a separate operation. There is no
+guarantee that the creation and open operations will happen atomically. This
+provides an opportunity for an attacker to interfere with the file before it is
+opened.","from tempfile import mktemp
+
+def write_results(results):
+    filename = mktemp()
+    with open(filename, ""w+"") as f:
+        f.write(results)
+    print(""Results written to"", filename)
+$$$
+from tempfile import NamedTemporaryFile
+
+def write_results(results):
+    with NamedTemporaryFile(mode=""w+"", delete=False) as f:
+        f.write(results)
+    print(""Results written to"", f.name)"
+21,Accepting Unknown SSH Host Keys When Using Paramiko,CWE-295,"In SSH protocol, host keys are used to verify the identity of
+remote hosts. Accepting unknown host keys may leave the connection open to
+man-in-the-middle attacks. In particular, setting the default missing
+host key policy for the Paramiko library to either 'AutoAddPolicy' or
+'WarningPolicy'</code>' continue even with unknown hosts.","from paramiko.client import SSHClient, AutoAddPolicy, RejectPolicy
+
+def unsafe_connect():
+    client = SSHClient()
+    client.set_missing_host_key_policy(AutoAddPolicy)
+    client.connect(""example.com"")
+
+    # ... interaction with server
+
+    client.close()
+
+def safe_connect():
+    client = SSHClient()
+    client.set_missing_host_key_policy(RejectPolicy)
+    client.connect(""example.com"")
+
+    # ... interaction with server
+
+    client.close()"
+22,PAM Authorization Bypass Due To Incorrect Usage,CWE-285,"Using only a call to 'pam_authenticate' to check the validity of a login can lead to 
+authorization bypass vulnerabilities. A 'pam_authenticate'
+only verifies the credentials of a user. It does not check if a user has an
+appropriate authorization to actually login. This means a user with an expired
+login or a password can still access the system.","libpam                    = CDLL(find_library(""pam""))
+
+pam_authenticate          = libpam.pam_authenticate
+pam_authenticate.restype  = c_int
+pam_authenticate.argtypes = [PamHandle, c_int]
+
+def authenticate(username, password, service='login'):
+    def my_conv(n_messages, messages, p_response, app_data):
+        """"""
+        Simple conversation function that responds to any prompt where the echo is off with the supplied password
+        """"""
+        ...
+
+    handle = PamHandle()
+    conv   = PamConv(my_conv, 0)
+    retval = pam_start(service, username, byref(conv), byref(handle))
+
+    retval = pam_authenticate(handle, 0)
+    return retval == 0
+$$$
+libpam                    = CDLL(find_library(""pam""))
+
+pam_authenticate          = libpam.pam_authenticate
+pam_authenticate.restype  = c_int
+pam_authenticate.argtypes = [PamHandle, c_int]
+
+pam_acct_mgmt          = libpam.pam_acct_mgmt
+pam_acct_mgmt.restype  = c_int
+pam_acct_mgmt.argtypes = [PamHandle, c_int]
+
+def authenticate(username, password, service='login'):
+    def my_conv(n_messages, messages, p_response, app_data):
+        """"""
+        Simple conversation function that responds to any prompt where the echo is off with the supplied password
+        """"""
+        ...
+
+    handle = PamHandle()
+    conv   = PamConv(my_conv, 0)
+    retval = pam_start(service, username, byref(conv), byref(handle))
+
+    retval = pam_authenticate(handle, 0)
+    if retval == 0:
+        retval = pam_acct_mgmt(handle, 0)
+    return retval == 0"
+23,XPath Query Built From User-Controlled Sources,CWE-643,"If an XPath expression is built using string concatenation, 
+and the components of the concatenation
+include user input, it makes it very easy for a user to create a 
+malicious XPath expression without sanitization or using variable references.","from lxml import etree
+from io import StringIO
+
+from django.urls import path
+from django.http import HttpResponse
+from django.template import Template, Context, Engine, engines
+
+
+def a(request):
+    value = request.GET['xpath']
+    f = StringIO('<foo><bar></bar></foo>')
+    tree = etree.parse(f)
+    r = tree.xpath(""/tag[@id='%s']"" % value)
+
+
+urlpatterns = [
+    path('a', a)
+]
+$$$
+from lxml import etree
+from io import StringIO
+
+from django.urls import path
+from django.http import HttpResponse
+from django.template import Template, Context, Engine, engines
+
+
+def a(request):
+    value = request.GET['xpath']
+    f = StringIO('<foo><bar></bar></foo>')
+    tree = etree.parse(f)
+    r = tree.xpath(""/tag[@id=$tagid]"", tagid=value)
+
+
+urlpatterns = [
+    path('a', a)
+]"
+24,Log Injection,CWE-117,"If unsanitized user input is written to a log entry, 
+a malicious user may be able to forge new log entries.
+Forgery can occur if a user provides some input with characters that are interpreted
+when the log output is displayed. If the log is displayed as a plain text file, then new
+line characters can be used by a malicious user to create the appearance of multiple log
+entries. If the log is displayed as HTML, then arbitrary HTML may be included to spoof
+log entries.","#!/usr/bin/env python
+# -*- coding: UTF-8 -*-
+""""""
+@Desc   ：Log Injection
+""""""
+from flask import Flask
+from flask import request
+from django.utils.log import request_logger
+import logging
+
+logging.basicConfig(level=logging.DEBUG)
+
+app = Flask(__name__)
+
+@app.route('/bad1')
+def bad1():
+    name = request.args.get('name')
+    app.logger.info('User name: ' + name) # Bad
+    return 'bad1'
+
+@app.route('/bad2')
+def bad2():
+    name = request.args.get('name')
+    logging.info('User name: ' + name) # Bad
+    return 'bad2'
+
+@app.route('/bad3')
+def bad3():
+    name = request.args.get('name')
+    request_logger.warn('User name: ' + name) # Bad
+    return 'bad3'
+
+@app.route('/bad4')
+def bad4():
+    name = request.args.get('name')
+    logtest = logging.getLogger('test')
+    logtest.debug('User name: ' + name) # Bad
+    return 'bad4'
+
+if __name__ == '__main__':
+    app.debug = True
+    handler = logging.FileHandler('log')
+    app.logger.addHandler(handler)
+    app.run()
+$$$
+#!/usr/bin/env python
+# -*- coding: UTF-8 -*-
+""""""
+@Desc   ：Log Injection
+""""""
+from flask import Flask
+from flask import request
+import logging
+
+logging.basicConfig(level=logging.DEBUG)
+
+app = Flask(__name__)
+
+@app.route('/good1')
+def good1():
+    name = request.args.get('name')
+    name = name.replace('\r\n','').replace('\n','')
+    logging.info('User name: ' + name) # Good
+    return 'good1'
+
+if __name__ == '__main__':
+    app.debug = True
+    handler = logging.FileHandler('log')
+    app.logger.addHandler(handler)
+    app.run()"
+25,Using Broken Or Weak Cryptographic Algorithm,CWE-327,"Using broken or weak cryptographic algorithms can leave data
+vulnerable to being decrypted or forged by an attacker. Any
+algorithm other than AES-128 or RSA-2048 may leave code
+vulnerable.","from Crypto.Cipher import DES, AES
+
+cipher = DES.new(SECRET_KEY)
+
+def send_encrypted(channel, message):
+    channel.send(cipher.encrypt(message)) # BAD: weak encryption
+
+
+cipher = AES.new(SECRET_KEY)
+
+def send_encrypted(channel, message):
+    channel.send(cipher.encrypt(message)) # GOOD: strong encryption"
+26,Clear-text Logging of Sensitive Information,CWE-312,"Sensitive data, like system info and password, written to log entry can be exposed to attackers
+who gains access to the logs or when the logs are printed.","# BAD: Logging cleartext sensitive data
+import os
+print(f""[INFO] Environment: {os.environ}"")
+$$$
+not_sensitive_data = {'a': 1, 'b': 2}
+# GOOD: it is fine to log data that is not sensitive
+print(f""[INFO] Some object contains: {not_sensitive_data}"")"
+27,Code Injection,CWE-094,"Directly evaluating user input (for example, an HTTP request parameter) 
+as code without properly sanitizing the input first allows an attacker 
+arbitrary code execution. This can occur when user
+input is passed to code that interprets it as an expression to be
+evaluated, such as 'eval' or 'exec'.","urlpatterns = [
+    # Route to code_execution
+    url(r'^code-ex1$', code_execution_bad, name='code-execution-bad'),
+    url(r'^code-ex2$', code_execution_good, name='code-execution-good')
+]
+
+def code_execution(request):
+    if request.method == 'POST':
+        first_name = base64.decodestring(request.POST.get('first_name', ''))
+        #BAD -- Allow user to define code to be run.
+        exec(""setname('%s')"" % first_name)
+
+def code_execution(request):
+    if request.method == 'POST':
+        first_name = base64.decodestring(request.POST.get('first_name', ''))
+        #GOOD --Call code directly
+        setname(first_name)"
+28,Unsafe Shell Command Constructed From Library Input,CWE-078,"Dynamically constructing shell commands with inputs from library 
+functions may  change the meaning of the commands.
+Clients may use inputs containing characters that the shell interprets in a 
+special way, for instance quotes and spaces.
+This can result in the shell command misbehaving or malicious actor control of system.",NULL
+29,Hard-Coded Credentials,CWE-798,"Hard-coding credentials, such as username, password and certificates, instead of saving
+them in configuration files or encrypting them during transmission can result in 
+attackers discovering sensitive information.","import hashlib
+import binascii
+
+def process_request(request):
+    password = request.GET[""password""]
+
+    # BAD: Inbound authentication made by comparison to string literal
+    if password == ""myPa55word"":
+        redirect(""login"")
+
+    hashed_password = load_from_config('hashed_password', CONFIG_FILE)
+    salt = load_from_config('salt', CONFIG_FILE)
+
+    #GOOD: Inbound authentication made by comparing to a hash password from a config file.
+    dk = hashlib.pbkdf2_hmac('sha256', password, salt, 100000)
+    hashed_input = binascii.hexlify(dk)
+    if hashed_input == hashed_password:
+        redirect(""login"")"
+30,Information Exposure Through An Exception,CWE-209,"Developers utilize error stack trace to fix bugs. However, attackers can also
+use information from stack trace. The sequence of class names in a stack trace 
+can reveal the structure
+of the application as well as any internal components it relies on.
+Error message at the top of a stack trace can include
+information such as server-side file names and application SQL code, 
+allowing an attacker to fine-tune a subsequent injection attack.","from flask import Flask
+app = Flask(__name__)
+
+
+import traceback
+
+def do_computation():
+    raise Exception(""Secret info"")
+
+# BAD
+@app.route('/bad')
+def server_bad():
+    try:
+        do_computation()
+    except Exception as e:
+        return traceback.format_exc()
+
+# GOOD
+@app.route('/good')
+def server_good():
+    try:
+        do_computation()
+    except Exception as e:
+        log(traceback.format_exc())
+        return ""An internal error has occurred!"""
+31,Bad HTML Tag Filtering,CWE-116,"If poor regex is used for HTML tag filtering, it can lead to XSS attacks or other
+security issues. They are caused by browsers with forgiving HTML parsers, and
+will often render invalid HTML containing syntax errors. 
+Regex should also recognize tags containing such syntax errors.","import re
+
+def filterScriptTags(content): 
+    oldContent = """"
+    while oldContent != content:
+        oldContent = content
+        content = re.sub(r'<script.*?>.*?</script>', '', content, flags= re.DOTALL | re.IGNORECASE)
+    return content"
+32,Clear-text Storage of Sensitive Information,CWE-312,"Sensitive information stored unencrypted is accessible to an attacker
+who gains access to the storage. This is particularly important for cookies,
+which are stored on the machine of the end-user.","from flask import Flask, make_response, request
+
+app = Flask(""Leak password"")
+
+@app.route('/')
+def index():
+    password = request.args.get(""password"")
+    resp = make_response(render_template(...))
+    resp.set_cookie(""password"", password)
+    return resp"
+33,URL Redirection From Remote Source,CWE-601,"Using user input for URL redirection without validation poses security risks 
+like phishing attacks by redirecting to an attacker's website.","from flask import Flask, request, redirect
+
+app = Flask(__name__)
+
+@app.route('/')
+def hello():
+    target = request.args.get('target', '')
+    return redirect(target, code=302)
+$$$
+from flask import Flask, request, redirect
+
+VALID_REDIRECT = ""http://cwe.mitre.org/data/definitions/601.html""
+
+app = Flask(__name__)
+
+@app.route('/')
+def hello():
+    target = request.args.get('target', '')
+    if target == VALID_REDIRECT:
+        return redirect(target, code=302)
+    else:
+        # ignore the target and redirect to the home page
+        return redirect('/', code=302)
+$$$
+from flask import Flask, request, redirect
+from urllib.parse import urlparse
+
+app = Flask(__name__)
+
+@app.route('/')
+def hello():
+    target = request.args.get('target', '')
+    target = target.replace('\\', '')
+    if not urlparse(target).netloc:
+        # relative path, safe to redirect
+        return redirect(target, code=302)
+    # ignore the target and redirect to the home page
+    return redirect('/', code=302)
+$$$
+from django.http import HttpResponseRedirect
+from django.shortcuts import redirect
+from django.utils.http import url_has_allowed_host_and_scheme
+from django.views import View
+
+class RedirectView(View):
+    def get(self, request, *args, **kwargs):
+        target = request.GET.get('target', '')
+        if url_has_allowed_host_and_scheme(target, allowed_hosts=None):
+            return HttpResponseRedirect(target)
+        else:
+            # ignore the target and redirect to the home page
+            return redirect('/')"
+34,Uncontrolled Command Line,CWE-078,"Code that passes user input directly to 'exec', 'eval', or some other library
+routine that executes a command, allows the user to execute malicious
+code.","urlpatterns = [
+    # Route to command_execution
+    url(r'^command-ex1$', command_execution_unsafe, name='command-execution-unsafe'),
+    url(r'^command-ex2$', command_execution_safe, name='command-execution-safe')
+]
+
+COMMANDS = {
+    ""list"" :""ls"",
+    ""stat"" : ""stat""
+}
+
+def command_execution_unsafe(request):
+    if request.method == 'POST':
+        action = request.POST.get('action', '')
+        #BAD -- No sanitizing of input
+        subprocess.call([""application"", action])
+
+def command_execution_safe(request):
+    if request.method == 'POST':
+        action = request.POST.get('action', '')
+        #GOOD -- Use an allowlist
+        subprocess.call([""application"", COMMANDS[action]])"
+35,Overly Permissive Regular Expression Range,CWE-020,"It's easy to write a regular expression range that matches a wider range of 
+characters than you intended. For example, '/[a-zA-z]/' matches all 
+lowercase and all uppercase letters,as you would expect, 
+but it also matches the characters: '[ \ ] ^ _ `'. Another common problem is 
+failing to escape the dash character in a regular expression. An unescaped dash is 
+interpreted as part of a range. For example, in the character class 
+'[a-zA-Z0-9%=.,-_]' the last character range matches the 55 characters 
+between ',' and '_' (both included), which overlaps with the range 
+'[0-9]' and is clearly not intended by the writer.",NULL
+36,Uncontrolled Data Used In Path Expression,CWE-022,"File access via user input can allow attackers to access sensitive
+data and modify files. Some examples of how this issue can occur are: 
+- allowing more than a single '.' character
+- allowing separators such as '/' or '\'
+- relying on simply replacing problematic sequences such as '../'","import os.path
+from flask import Flask, request, abort
+
+app = Flask(__name__)
+
+@app.route(""/user_picture1"")
+def user_picture1():
+    filename = request.args.get('p')
+    # BAD: This could read any file on the file system
+    data = open(filename, 'rb').read()
+    return data
+
+@app.route(""/user_picture2"")
+def user_picture2():
+    base_path = '/server/static/images'
+    filename = request.args.get('p')
+    # BAD: This could still read any file on the file system
+    data = open(os.path.join(base_path, filename), 'rb').read()
+    return data
+
+@app.route(""/user_picture3"")
+def user_picture3():
+    base_path = '/server/static/images'
+    filename = request.args.get('p')
+    #GOOD -- Verify with normalised version of path
+    fullpath = os.path.normpath(os.path.join(base_path, filename))
+    if not fullpath.startswith(base_path):
+        raise Exception(""not allowed"")
+    data = open(fullpath, 'rb').read()
+    return data"
+37,Flask App Is Run In Debug Mode,CWE-215,"Running a Flask application with debug mode enabled may allow an
+attacker to gain access through the Werkzeug debugger.","from flask import Flask
+
+app = Flask(__name__)
+
+@app.route('/crash')
+def main():
+    raise Exception()
+
+app.run(debug=True)"
+38,Overly Permissive File Permissions,CWE-732,"When creating a file, POSIX systems allow permissions to be specified
+for owner, group and others separately. If permissions should be kept as
+strict as possible, like only to owners, then it creates privacy issues.",NULL
+39,Reflected Server-Side Cross-Site Scripting,CWE-079,"Directly writing user input (for example, an HTTP request parameter) to a webpage
+without properly sanitizing the input first, allows for a cross-site scripting vulnerability.
+Actions such as not escaping the input before writing user input to the page, not using
+escaping functions like 'html.escape()', 'cgi.escape()' or  'flask.escape()' can lead to XSS
+attacks.","from flask import Flask, request, make_response, escape
+
+app = Flask(__name__)
+
+@app.route('/unsafe')
+def unsafe():
+    first_name = request.args.get('name', '')
+    return make_response(""Your name is "" + first_name)
+
+@app.route('/safe')
+def safe():
+    first_name = request.args.get('name', '')
+    return make_response(""Your name is "" + escape(first_name))"
