@@ -281,8 +281,9 @@ disco-lpo/
 │   ├── prompt_creation.py              # Stage 1: Generate prompts from security rules
 │   ├── synthetic_data_creation.py      # Stage 2: Create synthetic code with GPT-4
 │   ├── synthetic_data_refinement.py    # Stage 4: Refine code using static analysis feedback
+│   ├── synthetic_data_refinement.py    # Stage 4: Refine code using static analysis feedback
 │   ├── refinement_processing.ipynb     # Stage 3: Run static analysis and extract feedback  
-│   └── data_processing.ipynb           # Stage 5: Process and split final datasets
+│   └── libraries.py                    # Contains information about library modules used in the prompts for synthetic data generation
 ├── rules/                              # Security rule databases (user-provided)
 │   ├── bandit_rules.csv
 │   ├── codeql_rules.csv
