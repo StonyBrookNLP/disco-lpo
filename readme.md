@@ -206,8 +206,7 @@ Afterwards, use code_gen_metric.ipynb to calculate the metrics from the report.
 
 ## Generating Your Own Data
 
-- The rules used to create the synthetic data are present in "./rules"
-- However, due to the sensitive nature of the generated vulnerable code and the security risks that it poses, we will not be releasing the synthetic data generation code publicly. However, if you do wish to generate your own synthetic data for academic purposes, please reach out to "mdshasan@cs.stonybrook.edu" and we will provide you with synthetic data generation codebase. Thanks for understanding.
+The rules used to create the synthetic data are present in "./rules
 
 ## 📖 Usage
 
