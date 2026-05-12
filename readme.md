@@ -27,7 +27,7 @@ LLM generated code often contains security issues. We address two key challenges
 
 ## 🎯 Overview
 
-The DiSCo-LPO (Diverse Secure Code - Language Policy Optimization) project generates synthetic datasets containing:
+The DiSCo-LPO (Distilling Secure Code - Localized Preference Optimization) project generates synthetic datasets containing:
 
 - **Vulnerable Python code** with implicit security issues
 - **Corresponding secure versions** with minimal fixes
@@ -36,7 +36,7 @@ The DiSCo-LPO (Diverse Secure Code - Language Policy Optimization) project gener
 
 This synthetic data is created using a multi-stage pipeline that leverages:
 - Security rule databases (Bandit, CodeQL, CWE)
-- OpenAI GPT-4 for code generation
+- OpenAI GPT-4o for code generation
 - Static analysis tools for validation and refinement
 
 ## 🔄 Dataset Pipeline
